@@ -1,0 +1,11 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme inline {
+  --font-sans: var(--font-geist);
+  --font-serif: Georgia, 'Times New Roman', serif;
+}
+
+body {
+  font-family: var(--font-sans, system-ui, sans-serif);
+}
