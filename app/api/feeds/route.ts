@@ -6,6 +6,7 @@ export async function GET(req: NextRequest) {
   const limit = Number(searchParams.get('limit') ?? 20)
   const offset = Number(searchParams.get('offset') ?? 0)
   const search = searchParams.get('search') ?? undefined
+  const feedId = searchParams.get('feedId') ? Number(searchParams.get('feedId')) : undefined
   const stats = searchParams.get('stats') === 'true'
 
   try {
@@ -13,7 +14,7 @@ export async function GET(req: NextRequest) {
       const data = await getFeedStats()
       return NextResponse.json(data)
     }
-    const articles = await getEntries({ limit, offset, search })
+    const articles = await getEntries({ limit, offset, search, feedId })
     return NextResponse.json(articles)
   } catch (err) {
     console.error('[api/feeds]', err)

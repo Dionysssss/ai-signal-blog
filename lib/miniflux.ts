@@ -65,15 +65,22 @@ export async function getEntries(options: {
   status?: 'read' | 'unread'
   starred?: boolean
   search?: string
+  feedId?: number
 } = {}): Promise<Article[]> {
   const params = new URLSearchParams()
+  params.set('order', 'published_at')
+  params.set('direction', 'desc')
   if (options.limit) params.set('limit', String(options.limit))
   if (options.offset) params.set('offset', String(options.offset))
   if (options.status) params.set('status', options.status)
   if (options.starred) params.set('starred', 'true')
   if (options.search) params.set('search', options.search)
 
-  const data = await minifluxFetch(`/v1/entries?${params}`)
+  const path = options.feedId
+    ? `/v1/feeds/${options.feedId}/entries?${params}`
+    : `/v1/entries?${params}`
+
+  const data = await minifluxFetch(path)
   return (data.entries ?? []).map((e: Record<string, unknown>) =>
     toArticle(e, (e.feed as Record<string, unknown>)?.feed_url as string ?? '')
   )
@@ -86,6 +93,17 @@ export async function getEntry(id: number): Promise<Article> {
 
 export async function getFeeds(): Promise<Record<string, unknown>[]> {
   return minifluxFetch('/v1/feeds')
+}
+
+export async function getFeedSourceMap(): Promise<Record<FeedSource, number[]>> {
+  const feeds: Record<string, unknown>[] = await minifluxFetch('/v1/feeds')
+  const map: Partial<Record<FeedSource, number[]>> = {}
+  for (const f of feeds) {
+    const source = sourceFromFeedUrl(f.feed_url as string)
+    if (!map[source]) map[source] = []
+    map[source]!.push(f.id as number)
+  }
+  return map as Record<FeedSource, number[]>
 }
 
 export async function getFeedStats(): Promise<FeedStats> {

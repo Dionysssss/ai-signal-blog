@@ -1,38 +1,73 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { Article, FeedSource } from '@/lib/types'
 import ArticleCard from './ArticleCard'
-import { SOURCE_LABELS } from '@/lib/utils'
 
-const FILTERS: { label: string; source?: FeedSource }[] = [
-  { label: 'All' },
-  { label: 'HuggingFace', source: 'huggingface' },
-  { label: 'OpenAI', source: 'openai' },
-  { label: 'Google', source: 'google' },
-  { label: 'arXiv', source: 'arxiv' },
-  { label: 'Other' },
+const FILTERS: { label: string; key: FeedSource | 'all' }[] = [
+  { label: 'All',         key: 'all' },
+  { label: 'HuggingFace', key: 'huggingface' },
+  { label: 'OpenAI',      key: 'openai' },
+  { label: 'Google',      key: 'google' },
+  { label: 'arXiv',       key: 'arxiv' },
+  { label: 'Other',       key: 'other' },
 ]
 
-export default function ArticleList({ articles }: { articles: Article[] }) {
-  const [active, setActive] = useState<FeedSource | 'all' | 'other'>('all')
+type FeedSourceMap = Record<string, number[]>
 
-  const filtered = articles.filter(a => {
-    if (active === 'all') return true
-    if (active === 'other') return a.source === 'other' || !SOURCE_LABELS[a.source]
-    return a.source === active
-  })
+async function fetchBySource(source: FeedSource | 'all', feedSourceMap: FeedSourceMap): Promise<Article[]> {
+  if (source === 'all') return []
+
+  const feedIds = source === 'other'
+    ? Object.entries(feedSourceMap).filter(([k]) => k === 'other').flatMap(([, v]) => v)
+    : (feedSourceMap[source] ?? [])
+
+  if (feedIds.length === 0) return []
+
+  const results = await Promise.all(
+    feedIds.map(id =>
+      fetch(`/api/feeds?feedId=${id}&limit=20`)
+        .then(r => r.json())
+        .catch(() => [])
+    )
+  )
+  const all: Article[] = results.flat()
+  all.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+  return all
+}
+
+export default function ArticleList({
+  articles: initialArticles,
+  feedSourceMap,
+}: {
+  articles: Article[]
+  feedSourceMap: FeedSourceMap
+}) {
+  const [active, setActive] = useState<FeedSource | 'all'>('all')
+  const [articles, setArticles] = useState(initialArticles)
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (active === 'all') {
+      setArticles(initialArticles)
+      return
+    }
+    setLoading(true)
+    fetchBySource(active, feedSourceMap).then(data => {
+      setArticles(data)
+      setLoading(false)
+    })
+  }, [active, feedSourceMap, initialArticles])
 
   return (
     <div>
       <div className="flex gap-2 flex-wrap mb-6">
         {FILTERS.map(f => {
-          const key = f.source ?? (f.label === 'All' ? 'all' : 'other')
-          const isActive = active === key
+          const isActive = active === f.key
           return (
             <button
-              key={key}
-              onClick={() => setActive(key as typeof active)}
+              key={f.key}
+              onClick={() => setActive(f.key)}
               className={`px-3 py-1 rounded-full text-sm border transition-colors ${
                 isActive
                   ? 'bg-[#1D9E75] text-white border-[#1D9E75]'
@@ -45,10 +80,12 @@ export default function ArticleList({ articles }: { articles: Article[] }) {
         })}
       </div>
 
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div className="py-12 text-center text-gray-400 text-sm">Loading…</div>
+      ) : articles.length === 0 ? (
         <p className="text-gray-400 py-8 text-center">No articles yet — check back soon.</p>
       ) : (
-        filtered.map((a, i) => (
+        articles.map((a, i) => (
           <ArticleCard key={a.id} article={a} featured={i === 0 && active === 'all'} />
         ))
       )}

@@ -1,11 +1,11 @@
-import { getEntries, getFeedStats } from '@/lib/miniflux'
+import { getEntries, getFeedStats, getFeedSourceMap } from '@/lib/miniflux'
 import StatsBar from '@/components/StatsBar'
 import ArticleList from '@/components/ArticleList'
 
 export const revalidate = 300
 
 export default async function HomePage() {
-  const [articles, stats] = await Promise.all([
+  const [articles, stats, feedSourceMap] = await Promise.all([
     getEntries({ limit: 40 }).catch(() => []),
     getFeedStats().catch(() => ({
       totalArticles: 0,
@@ -13,6 +13,7 @@ export default async function HomePage() {
       weeklyReleases: 0,
       lastUpdated: new Date().toISOString(),
     })),
+    getFeedSourceMap().catch(() => ({} as Record<string, number[]>)),
   ])
 
   return (
@@ -25,7 +26,7 @@ export default async function HomePage() {
           </p>
         </div>
         <StatsBar stats={stats} />
-        <ArticleList articles={articles} />
+        <ArticleList articles={articles} feedSourceMap={feedSourceMap} />
       </div>
 
       <aside className="hidden lg:block">
