@@ -9,16 +9,17 @@ import LeadStory from './LeadStory'
 import NewsCard from './NewsCard'
 import type { FeedStats } from '@/lib/types'
 
-const FILTERS: { key: FeedSource | 'all'; labelKey: string; label: string }[] = [
-  { key: 'all',         labelKey: 'filter.all', label: 'All' },
-  { key: 'huggingface', labelKey: '',           label: 'HuggingFace' },
-  { key: 'openai',      labelKey: '',           label: 'OpenAI' },
-  { key: 'google',      labelKey: '',           label: 'Google' },
-  { key: 'arxiv',       labelKey: '',           label: 'arXiv' },
-  { key: 'other',       labelKey: '',           label: 'Other' },
+const FILTERS: { key: FeedSource | 'all' }[] = [
+  { key: 'all' },
+  { key: 'huggingface' },
+  { key: 'openai' },
+  { key: 'google' },
+  { key: 'arxiv' },
+  { key: 'other' },
 ]
 
 type FeedSourceMap = Record<string, number[]>
+type SummaryMap = Record<number, { en_summary: string; zh_summary: string | null }>
 
 async function fetchBySource(source: FeedSource | 'all', feedSourceMap: FeedSourceMap): Promise<Article[]> {
   const ids = source === 'all' ? [] : (feedSourceMap[source] ?? [])
@@ -29,6 +30,17 @@ async function fetchBySource(source: FeedSource | 'all', feedSourceMap: FeedSour
   const all: Article[] = results.flat()
   all.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
   return all
+}
+
+async function fetchSummaries(articleIds: number[]): Promise<SummaryMap> {
+  if (articleIds.length === 0) return {}
+  try {
+    const res = await fetch(`/api/summaries?ids=${articleIds.join(',')}`)
+    const rows: { article_id: number; en_summary: string; zh_summary: string | null }[] = await res.json()
+    return Object.fromEntries(rows.map(r => [r.article_id, r]))
+  } catch {
+    return {}
+  }
 }
 
 export default function NewsGrid({
@@ -44,7 +56,15 @@ export default function NewsGrid({
 }) {
   const [active, setActive] = useState<FeedSource | 'all'>('all')
   const [articles, setArticles] = useState(initialArticles)
+  const [summaries, setSummaries] = useState<SummaryMap>({})
   const [loading, setLoading] = useState(false)
+
+  // Fetch DB summaries whenever article list changes (for ZH locale)
+  useEffect(() => {
+    if (articles.length === 0) return
+    const ids = articles.map(a => a.id)
+    fetchSummaries(ids).then(setSummaries)
+  }, [articles])
 
   useEffect(() => {
     if (active === 'all') { setArticles(initialArticles); return }
@@ -55,16 +75,30 @@ export default function NewsGrid({
     })
   }, [active, feedSourceMap, initialArticles])
 
-  const lead = articles[0]
-  const grid = articles.slice(1, 9)
+  // Merge DB summaries into articles for current locale
+  const enriched = articles.map(a => {
+    const dbRow = summaries[a.id]
+    if (!dbRow) return a
+    return {
+      ...a,
+      summary: locale === 'zh' && dbRow.zh_summary
+        ? dbRow.zh_summary
+        : dbRow.en_summary || a.summary,
+    }
+  })
+
+  const lead = enriched[0]
+  const grid = enriched.slice(1, 9)
 
   return (
     <div>
       {/* Section filter tabs */}
-      <div className="flex gap-0 flex-wrap border-b border-[var(--color-rule)] mb-0">
+      <div className="flex gap-0 flex-wrap border-b border-[var(--color-rule)] border-opacity-30 mb-0">
         {FILTERS.map(f => {
           const isActive = active === f.key
-          const label = f.key === 'all' ? t('filter.all', locale) : (SOURCE_LABELS[f.key as FeedSource] ?? f.label)
+          const label = f.key === 'all'
+            ? t('filter.all', locale)
+            : (SOURCE_LABELS[f.key as FeedSource] ?? f.key)
           return (
             <button
               key={f.key}
@@ -85,16 +119,13 @@ export default function NewsGrid({
         <div className="py-16 text-center text-[var(--color-ink-muted)] font-mono text-sm">
           {t('filter.loading', locale)}
         </div>
-      ) : articles.length === 0 ? (
+      ) : enriched.length === 0 ? (
         <p className="py-16 text-center text-[var(--color-ink-muted)] font-mono text-sm">
           {t('filter.empty', locale)}
         </p>
       ) : (
         <>
-          {/* Lead story */}
           {lead && <LeadStory article={lead} locale={locale} />}
-
-          {/* 2-column grid */}
           {grid.length > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 mt-2">
               {grid.map(a => <NewsCard key={a.id} article={a} />)}
