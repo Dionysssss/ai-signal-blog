@@ -1,4 +1,5 @@
 import type { Article, FeedSource, FeedStats } from './types'
+import type { Locale } from './i18n'
 
 const MINIFLUX_URL = process.env.MINIFLUX_URL!
 const MINIFLUX_KEY = process.env.MINIFLUX_API_KEY!
@@ -15,16 +16,19 @@ function sourceFromFeedUrl(feedUrl: string): FeedSource {
   return 'other'
 }
 
-function extractSummary(content: string): string {
-  // miniflux-ai prepends summaries with "֎ AI Summary:" marker
+function extractSummary(content: string, locale: Locale = 'en'): string {
   const marker = '֎ AI Summary:'
   const idx = content.indexOf(marker)
   if (idx !== -1) {
-    const after = content.slice(idx + marker.length)
-    // Strip HTML tags from summary block
-    return after.replace(/<[^>]+>/g, '').trim().slice(0, 300)
+    const block = content.slice(idx + marker.length).replace(/<[^>]+>/g, '')
+    // Try bilingual format: "EN: ... ZH: ..."
+    const enMatch = block.match(/EN:\s*(.+?)(?=ZH:|$)/s)
+    const zhMatch = block.match(/ZH:\s*(.+?)$/s)
+    if (locale === 'zh' && zhMatch) return zhMatch[1].trim().slice(0, 300)
+    if (enMatch) return enMatch[1].trim().slice(0, 300)
+    // Legacy single-language summary
+    return block.trim().slice(0, 300)
   }
-  // Fallback: first 200 chars of plain text
   return content.replace(/<[^>]+>/g, '').trim().slice(0, 200)
 }
 

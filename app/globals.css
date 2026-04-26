@@ -4,8 +4,34 @@
 @theme inline {
   --font-sans: var(--font-geist);
   --font-serif: Georgia, 'Times New Roman', serif;
+
+  --color-paper: #f5f0e8;
+  --color-paper-2: #ede6d6;
+  --color-ink: #1a1a1a;
+  --color-ink-muted: #5a5248;
+  --color-accent: #7d1111;
+  --color-rule: #1a1a1a;
+  --color-signal: #1D9E75;
 }
 
 body {
   font-family: var(--font-sans, system-ui, sans-serif);
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+}
+
+.rule-double {
+  border-bottom: 3px double var(--color-rule);
+}
+
+.rule-single {
+  border-bottom: 1px solid var(--color-rule);
+}
+
+.kicker {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-accent);
 }

@@ -1,5 +1,9 @@
 import type { Metadata } from 'next'
 import { Geist } from 'next/font/google'
+import { cookies } from 'next/headers'
+import type { Locale } from '@/lib/i18n'
+import { t } from '@/lib/i18n'
+import LanguageToggle from '@/components/LanguageToggle'
 import './globals.css'
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-geist' })
@@ -9,27 +13,34 @@ export const metadata: Metadata = {
   description: 'Tracking AI model releases from HuggingFace, OpenAI, Anthropic, Google, and more.',
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const cookieStore = await cookies()
+  const locale = (cookieStore.get('lang')?.value ?? 'en') as Locale
+
   return (
-    <html lang="en" className={geist.variable}>
-      <body className="bg-white text-gray-900 font-sans antialiased">
-        <header className="border-b border-[#EBEBEB] sticky top-0 bg-white/95 backdrop-blur z-10">
-          <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-            <a href="/" className="font-serif text-lg tracking-tight">
-              AI <span className="text-[#1D9E75]">Signal</span>
-            </a>
-            <nav className="flex gap-6 text-sm text-gray-500">
-              <a href="/" className="hover:text-gray-900 transition-colors">Feed</a>
-              <a href="/archive" className="hover:text-gray-900 transition-colors">Archive</a>
-            </nav>
+    <html lang={locale}>
+      <body className={`${geist.variable} antialiased min-h-screen`}>
+        <nav className="border-b border-[var(--color-ink)] border-opacity-20">
+          <div className="max-w-5xl mx-auto px-4 h-10 flex items-center justify-between">
+            <div className="flex gap-5 text-xs font-mono uppercase tracking-widest text-[var(--color-ink-muted)]">
+              <a href="/" className="hover:text-[var(--color-ink)] transition-colors">
+                {t('nav.feed', locale)}
+              </a>
+              <a href="/archive" className="hover:text-[var(--color-ink)] transition-colors">
+                {t('nav.archive', locale)}
+              </a>
+            </div>
+            <LanguageToggle />
           </div>
-        </header>
-        <main className="max-w-5xl mx-auto px-4 py-8">
+        </nav>
+
+        <main className="max-w-5xl mx-auto px-4 py-6">
           {children}
         </main>
-        <footer className="border-t border-[#EBEBEB] mt-16">
-          <div className="max-w-5xl mx-auto px-4 py-6 text-xs text-gray-400 flex justify-between">
-            <span>Powered by Miniflux · miniflux-ai · Gemini</span>
+
+        <footer className="border-t border-[var(--color-ink)] border-opacity-20 mt-16">
+          <div className="max-w-5xl mx-auto px-4 py-4 text-[10px] font-mono text-[var(--color-ink-muted)] flex justify-between">
+            <span>{t('footer.powered', locale)}</span>
             <span>© 2026 Steve</span>
           </div>
         </footer>
