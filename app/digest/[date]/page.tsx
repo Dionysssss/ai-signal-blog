@@ -7,19 +7,27 @@ import ThoughtsBlock from '@/components/ThoughtsBlock'
 import DigestSection from '@/components/DigestSection'
 
 const SUMMARY_API = process.env.SUMMARY_API_URL ?? 'http://163.192.14.127:8090'
+const BASE_URL = process.env.VERCEL_URL
+  ? `https://${process.env.VERCEL_URL}`
+  : 'http://localhost:3000'
 
 export const revalidate = 3600
 
 async function getDigest(date: string) {
-  try {
-    const res = await fetch(`${SUMMARY_API}/digest/${date}`, {
-      next: { revalidate: 3600 },
-    })
-    if (!res.ok) return null
-    return res.json()
-  } catch {
-    return null
+  // Try proxy route first (works from Vercel), fall back to direct
+  const urls = [
+    `${BASE_URL}/api/digest/${date}`,
+    `${SUMMARY_API}/digest/${date}`,
+  ]
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, { next: { revalidate: 3600 } })
+      if (res.ok) return res.json()
+    } catch {
+      continue
+    }
   }
+  return null
 }
 
 export default async function DigestPage({ params }: { params: Promise<{ date: string }> }) {
