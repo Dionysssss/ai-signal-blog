@@ -29,6 +29,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <a href="/archive" className="hover:text-[var(--color-ink)] transition-colors">
                 {t('nav.archive', locale)}
               </a>
+              <a href="/digest" className="hover:text-[var(--color-ink)] transition-colors">
+                {t('nav.digest', locale)}
+              </a>
             </div>
             <LanguageToggle />
           </div>

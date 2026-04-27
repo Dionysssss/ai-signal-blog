@@ -4,6 +4,7 @@ const dict = {
   en: {
     'nav.feed': 'Feed',
     'nav.archive': 'Archive',
+    'nav.digest': 'Daily',
     'stats.articles': 'articles',
     'stats.sources': 'sources',
     'stats.thisWeek': 'this week',
@@ -20,10 +21,17 @@ const dict = {
     'article.aiSummary': 'AI Summary',
     'article.related': 'More from',
     'footer.powered': 'Powered by Miniflux · miniflux-ai · Gemini',
+    'digest.title': 'AI Signal Daily',
+    'digest.thoughts': "Today's Thoughts",
+    'digest.releases': 'Releases & Products',
+    'digest.research': 'Research',
+    'digest.community': 'Community Takes',
+    'digest.empty': 'No articles today.',
   },
   zh: {
     'nav.feed': '动态',
     'nav.archive': '归档',
+    'nav.digest': '日报',
     'stats.articles': '篇文章',
     'stats.sources': '个来源',
     'stats.thisWeek': '本周',
@@ -40,6 +48,12 @@ const dict = {
     'article.aiSummary': 'AI 摘要',
     'article.related': '同来源更多',
     'footer.powered': '数据来源：Miniflux · miniflux-ai · Gemini',
+    'digest.title': 'AI Signal 日报',
+    'digest.thoughts': '今日观察',
+    'digest.releases': '发布与产品',
+    'digest.research': '研究论文',
+    'digest.community': '社区动态',
+    'digest.empty': '今日暂无文章。',
   },
 } as const
 
