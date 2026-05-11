@@ -6,7 +6,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ dat
   const { date } = await params
   try {
     const res = await fetch(`${SUMMARY_API}/digest/${date}`, {
-      next: { revalidate: 3600 },
+      next: { revalidate: 300 },
     })
     if (!res.ok) return NextResponse.json({ error: 'not found' }, { status: res.status })
     return NextResponse.json(await res.json())

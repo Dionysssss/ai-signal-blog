@@ -11,7 +11,7 @@ const BASE_URL = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
   : 'http://localhost:3000'
 
-export const revalidate = 3600
+export const revalidate = 300
 
 async function getDigest(date: string) {
   // Try proxy route first (works from Vercel), fall back to direct
@@ -21,7 +21,7 @@ async function getDigest(date: string) {
   ]
   for (const url of urls) {
     try {
-      const res = await fetch(url, { next: { revalidate: 3600 } })
+      const res = await fetch(url, { next: { revalidate: 300 } })
       if (res.ok) return res.json()
     } catch {
       continue
